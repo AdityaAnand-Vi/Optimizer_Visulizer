@@ -13,6 +13,7 @@ from sklearn.preprocessing import StandardScaler
 
 from mlp import MLP, binary_cross_entropy
 from optimizers import get_optimizer
+from ui_helpers import apply_instrument_theme, inject_custom_css, render_telemetry_strip
 
 # -----------------------------------------------------------------------------
 # Fixed Color Palette & Constants (Identical to Part A)
@@ -85,6 +86,7 @@ def calculate_convergence_epoch(test_losses, tolerance=0.01):
 
 def render_part_b():
     """Main rendering function for Part B (Neural Network Optimizer Benchmark)."""
+    inject_custom_css()
     st.header("🧠 Part B: Neural Network Optimizer Benchmark")
 
     app_mode = st.session_state.get("app_mode", "Simple mode")
@@ -212,6 +214,7 @@ def render_part_b():
                 "eff_lr": [],
             }
 
+        telemetry_ph = st.empty()
         progress_bar = st.progress(0, text="Initializing training...")
         status_box = st.empty()
 
@@ -285,6 +288,21 @@ def render_part_b():
                 st.session_state.training_results[opt_name]["test_acc"].append(te_acc)
                 st.session_state.training_results[opt_name]["eff_lr"].append(effective_lr_val)
 
+                first_opt = selected_opts[0] if selected_opts else None
+                if first_opt and len(st.session_state.training_results[first_opt]["train_loss"]) > 0:
+                    curr_tr_loss = st.session_state.training_results[first_opt]["train_loss"][-1]
+                    curr_te_acc = st.session_state.training_results[first_opt]["test_acc"][-1]
+                    telemetry_items = {
+                        "EPOCH": f"{epoch}/{epochs}",
+                        f"{first_opt} TRAIN LOSS": f"{curr_tr_loss:.4f}",
+                        f"{first_opt} TEST ACC": f"{curr_te_acc:.2f}%",
+                    }
+                else:
+                    telemetry_items = {"EPOCH": f"{epoch}/{epochs}"}
+
+                with telemetry_ph.container():
+                    render_telemetry_strip(telemetry_items)
+
                 overall_progress = ((run_idx * epochs) + epoch) / (total_runs * epochs)
                 progress_bar.progress(
                     overall_progress,
@@ -308,8 +326,8 @@ def render_part_b():
                     ax1.set_ylabel("Train Loss (BCE)")
                     ax1.set_yscale("log")
                     ax1.set_title("Training Loss vs Epoch")
-                    ax1.grid(True, linestyle="--", alpha=0.4)
                     ax1.legend(fontsize=7)
+                    apply_instrument_theme(fig1, ax1)
                     fig1.tight_layout()
                     chart1_ph.pyplot(fig1)
 
@@ -329,8 +347,8 @@ def render_part_b():
                     ax2.set_ylabel("Test Loss (BCE)")
                     ax2.set_yscale("log")
                     ax2.set_title("Validation / Test Loss vs Epoch")
-                    ax2.grid(True, linestyle="--", alpha=0.4)
                     ax2.legend(fontsize=7)
+                    apply_instrument_theme(fig2, ax2)
                     fig2.tight_layout()
                     chart2_ph.pyplot(fig2)
 
@@ -349,8 +367,8 @@ def render_part_b():
                     ax3.set_xlabel("Epoch")
                     ax3.set_ylabel("Test Accuracy (%)")
                     ax3.set_title("Test Accuracy vs Epoch")
-                    ax3.grid(True, linestyle="--", alpha=0.4)
                     ax3.legend(fontsize=7)
+                    apply_instrument_theme(fig3, ax3)
                     fig3.tight_layout()
                     chart3_ph.pyplot(fig3)
 
@@ -374,9 +392,9 @@ def render_part_b():
                         ax4.set_ylabel("Effective Learning Rate (eta_eff)")
                         ax4.set_yscale("log")
                         ax4.set_title("Effective Learning Rate vs Epoch (Adaptive Only)")
-                        ax4.grid(True, linestyle="--", alpha=0.4)
                         if has_adaptive:
                             ax4.legend(fontsize=7)
+                        apply_instrument_theme(fig4, ax4)
                         fig4.tight_layout()
                         chart4_ph.pyplot(fig4)
 

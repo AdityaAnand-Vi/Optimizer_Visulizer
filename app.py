@@ -6,6 +6,7 @@ Unified Streamlit application running Part A (2D Loss Surfaces) and Part B (MLP 
 import streamlit as st
 from part_a_playground import render_part_a
 from part_b_dashboard import render_part_b
+from ui_helpers import inject_custom_css
 
 # -----------------------------------------------------------------------------
 # Global Page Configuration
@@ -15,6 +16,8 @@ st.set_page_config(
     page_icon="⚡",
     layout="wide",
 )
+
+inject_custom_css()
 
 # Initialize global session state for App Mode
 if "app_mode" not in st.session_state:

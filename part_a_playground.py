@@ -4,11 +4,14 @@ Visualizes 7 optimization algorithms from scratch on loss surfaces with differen
 """
 
 import time
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 import numpy as np
 import streamlit as st
 
 from optimizers import get_optimizer
+from ui_helpers import apply_instrument_theme, inject_custom_css, render_telemetry_strip
 
 # -----------------------------------------------------------------------------
 # Fixed Color Palette & Loss Surfaces (Unified across Part A & B)
@@ -128,6 +131,16 @@ def analyze_optimizer_status(name, traj, loss_history, curr_step):
 
 
 @st.cache_data(show_spinner=False)
+def compute_contour_grid(surface_name, max_x, max_y):
+    func = LOSS_SURFACES[surface_name]["func"]
+    x_vals = np.linspace(-max_x, max_x, 200)
+    y_vals = np.linspace(-max_y, max_y, 200)
+    X, Y = np.meshgrid(x_vals, y_vals)
+    Z = func(X, Y)
+    return X, Y, Z
+
+
+@st.cache_data(show_spinner=False)
 def compute_all_trajectories(
     opts_tuple, s_name, init_x, init_y, lrate, b_val, b1_val, b2_val, wd_val, max_steps=500
 ):
@@ -183,6 +196,7 @@ def compute_all_trajectories(
 
 def render_part_a():
     """Main rendering function for Part A (2D Loss Surface Playground)."""
+    inject_custom_css()
     st.header("⚡ Part A: 2D Loss Surface Playground")
 
     # Read global app mode
@@ -353,7 +367,7 @@ def render_part_a():
 
     btn_col1, btn_col2, btn_col3, btn_col4 = st.sidebar.columns(4)
 
-    if btn_col1.button("▶ Play", key="part_a_play"):
+    if btn_col1.button("▶ Play", key="part_a_play", type="primary"):
         st.session_state.is_playing = True
 
     if btn_col2.button("⏸ Pause", key="part_a_pause"):
@@ -406,6 +420,28 @@ def render_part_a():
         key="part_a_show_arrow",
     )
 
+    # Telemetry Strip
+    telemetry_items = {"ITER": f"{curr_step}/500"}
+    if selected_opts:
+        first_opt = selected_opts[0]
+        first_traj = trajectories[first_opt]
+        first_loss = losses[first_opt]
+        pos_at_step = first_traj[curr_step] if curr_step < len(first_traj) else first_traj[-1]
+        loss_at_step = first_loss[curr_step] if curr_step < len(first_loss) else first_loss[-1]
+
+        if not np.isnan(pos_at_step).any() and not np.isinf(pos_at_step).any():
+            grad_at_step = selected_surface["grad"](pos_at_step)
+            grad_norm_val = float(np.linalg.norm(grad_at_step))
+            grad_norm_str = f"{grad_norm_val:.4f}"
+        else:
+            grad_norm_str = "N/A"
+
+        loss_str = f"{loss_at_step:.4f}" if (not np.isnan(loss_at_step) and not np.isinf(loss_at_step)) else "Diverged"
+        telemetry_items[f"{first_opt} LOSS"] = loss_str
+        telemetry_items[f"{first_opt} GRAD NORM"] = grad_norm_str
+
+    render_telemetry_strip(telemetry_items)
+
     col1, col2 = st.columns(2)
 
     # View 1: Contour Plot
@@ -415,14 +451,15 @@ def render_part_a():
         max_x = max(abs(x0) * 1.2, 10.0)
         max_y = max(abs(y0) * 1.2, 10.0)
 
-        x_vals = np.linspace(-max_x, max_x, 200)
-        y_vals = np.linspace(-max_y, max_y, 200)
-        X, Y = np.meshgrid(x_vals, y_vals)
-        Z = selected_surface["func"](X, Y)
+        X, Y, Z = compute_contour_grid(surface_name, max_x, max_y)
 
-        contour_fill = ax1.contourf(X, Y, Z, levels=30, cmap="viridis", alpha=0.85)
-        ax1.contour(X, Y, Z, levels=15, colors="white", alpha=0.25, linewidths=0.5)
-        fig1.colorbar(contour_fill, ax=ax1, label="Loss L(x, y)")
+        contour_fill = ax1.contourf(X, Y, Z, levels=20, cmap="viridis", alpha=0.85)
+        ax1.contour(X, Y, Z, levels=10, colors="white", alpha=0.25, linewidths=0.5)
+        cbar = fig1.colorbar(contour_fill, ax=ax1, label="Loss L(x, y)")
+        cbar.ax.yaxis.set_tick_params(color="#E7EAEE")
+        cbar.ax.tick_params(labelsize=8, labelcolor="#E7EAEE")
+        cbar.set_label("Loss L(x, y)", color="#E7EAEE")
+        cbar.outline.set_edgecolor("#2E3742")
 
         ax1.plot(0, 0, "*", color="gold", markersize=14, markeredgecolor="black", label="Min (0,0)", zorder=10)
 
@@ -439,15 +476,14 @@ def render_part_a():
                 recent_traj = valid_traj[-trail_len:]
                 n_pts = len(recent_traj)
                 if n_pts > 1:
-                    for i in range(n_pts - 1):
-                        alpha_val = 0.15 + 0.8 * (i / max(1, n_pts - 1))
-                        ax1.plot(
-                            recent_traj[i : i + 2, 0],
-                            recent_traj[i : i + 2, 1],
-                            color=color,
-                            linewidth=2.8,
-                            alpha=alpha_val,
-                        )
+                    segments = np.stack([recent_traj[:-1], recent_traj[1:]], axis=1)
+                    r, g, b, _ = mcolors.to_rgba(color)
+                    colors = [
+                        (r, g, b, 0.15 + 0.8 * (i / max(1, n_pts - 1)))
+                        for i in range(n_pts - 1)
+                    ]
+                    lc = LineCollection(segments, colors=colors, linewidths=2.8)
+                    ax1.add_collection(lc)
 
                 curr_pos = valid_traj[-1]
                 ax1.plot(
@@ -490,6 +526,7 @@ def render_part_a():
         ax1.set_ylabel("Parameter y")
         ax1.set_title(f"Contour Trajectory Plot ({surface_name}) - Step {curr_step}/500")
         ax1.legend(loc="upper right", fontsize=7, framealpha=0.8)
+        apply_instrument_theme(fig1, ax1)
         fig1.tight_layout()
         st.pyplot(fig1)
 
@@ -522,8 +559,8 @@ def render_part_a():
         ax2.set_ylabel("Loss L(x, y)")
         ax2.set_yscale("log")
         ax2.set_title(f"Loss Reduction vs Iteration - Step {curr_step}/500")
-        ax2.grid(True, which="both", linestyle="--", alpha=0.4)
         ax2.legend(loc="upper right", fontsize=7, framealpha=0.8)
+        apply_instrument_theme(fig2, ax2)
         fig2.tight_layout()
         st.pyplot(fig2)
 
@@ -544,8 +581,10 @@ def render_part_a():
     # Animation Loop Execution
     if st.session_state.is_playing:
         if st.session_state.current_step < 500:
-            time.sleep(speed_ms / 1000.0)
-            st.session_state.current_step += 1
+            steps_per_frame = max(1, int(round(100.0 / speed_ms)))
+            delay = (speed_ms * steps_per_frame) / 1000.0
+            time.sleep(delay)
+            st.session_state.current_step = min(500, st.session_state.current_step + steps_per_frame)
             st.rerun()
         else:
             st.session_state.is_playing = False

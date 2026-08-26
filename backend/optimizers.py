@@ -1,22 +1,23 @@
 """
-Custom optimization algorithms implemented from scratch using NumPy.
+Stateful Optimization Algorithms implemented from first principles using pure NumPy.
+Implements SGD, SGDMomentum, NAG, AdaGrad, RMSProp, Adam, and AdamW.
 """
 
 import numpy as np
 
 
 class BaseOptimizer:
-    """Base class for optimizers."""
+    """Base class for all stateful optimizers."""
 
     def __init__(self, lr=0.01):
         self.lr = lr
 
     def reset(self):
-        """Reset internal state."""
+        """Reset internal optimizer state."""
         pass
 
     def step(self, params, grad):
-        """Perform a single optimization step."""
+        """Perform a single parameter update step."""
         raise NotImplementedError
 
 
@@ -31,11 +32,11 @@ class SGD(BaseOptimizer):
 
     def step(self, params, grad):
         params = np.asarray(params, dtype=np.float64)
-        params -= self.lr * grad
-        return params
+        grad = np.asarray(grad, dtype=np.float64)
+        return params - self.lr * grad
 
 
-class Momentum(BaseOptimizer):
+class SGDMomentum(BaseOptimizer):
     """SGD with Momentum."""
 
     def __init__(self, lr=0.01, beta=0.9):
@@ -48,14 +49,15 @@ class Momentum(BaseOptimizer):
 
     def step(self, params, grad):
         params = np.asarray(params, dtype=np.float64)
+        grad = np.asarray(grad, dtype=np.float64)
         if self.v is None:
             self.v = np.zeros_like(params)
         self.v = self.beta * self.v + (1.0 - self.beta) * grad
-        params -= self.lr * self.v
-        return params
+        return params - self.lr * self.v
 
 
-SGDMomentum = Momentum
+# Alias for backward compatibility
+Momentum = SGDMomentum
 
 
 class NAG(BaseOptimizer):
@@ -69,15 +71,30 @@ class NAG(BaseOptimizer):
     def reset(self):
         self.v = None
 
-    def step(self, params, grad_fn):
+    def get_lookahead_params(self, params):
+        """Compute lookahead parameters theta_lookahead = theta - beta * v."""
         params = np.asarray(params, dtype=np.float64)
         if self.v is None:
             self.v = np.zeros_like(params)
-        lookahead = params - self.beta * self.v
-        grad = grad_fn(lookahead)
-        self.v = self.beta * self.v + (1.0 - self.beta) * grad
-        params -= self.lr * self.v
-        return params
+        return params - self.beta * self.v
+
+    def step(self, params, grad):
+        """
+        Perform step. Accepts either grad array (computed at lookahead position)
+        or a grad_fn callback.
+        """
+        params = np.asarray(params, dtype=np.float64)
+        if self.v is None:
+            self.v = np.zeros_like(params)
+
+        if callable(grad):
+            lookahead = self.get_lookahead_params(params)
+            g = grad(lookahead)
+        else:
+            g = np.asarray(grad, dtype=np.float64)
+
+        self.v = self.beta * self.v + (1.0 - self.beta) * g
+        return params - self.lr * self.v
 
 
 class AdaGrad(BaseOptimizer):
@@ -93,11 +110,11 @@ class AdaGrad(BaseOptimizer):
 
     def step(self, params, grad):
         params = np.asarray(params, dtype=np.float64)
+        grad = np.asarray(grad, dtype=np.float64)
         if self.G is None:
             self.G = np.zeros_like(params)
         self.G += grad**2
-        params -= self.lr * grad / (np.sqrt(self.G) + self.eps)
-        return params
+        return params - self.lr * grad / (np.sqrt(self.G) + self.eps)
 
 
 class RMSProp(BaseOptimizer):
@@ -114,15 +131,15 @@ class RMSProp(BaseOptimizer):
 
     def step(self, params, grad):
         params = np.asarray(params, dtype=np.float64)
+        grad = np.asarray(grad, dtype=np.float64)
         if self.v is None:
             self.v = np.zeros_like(params)
         self.v = self.beta * self.v + (1.0 - self.beta) * (grad**2)
-        params -= self.lr * grad / (np.sqrt(self.v) + self.eps)
-        return params
+        return params - self.lr * grad / (np.sqrt(self.v) + self.eps)
 
 
 class Adam(BaseOptimizer):
-    """Adam optimizer."""
+    """Adam optimizer with full bias correction."""
 
     def __init__(self, lr=0.01, beta1=0.9, beta2=0.999, eps=1e-8):
         super().__init__(lr=lr)
@@ -140,6 +157,7 @@ class Adam(BaseOptimizer):
 
     def step(self, params, grad):
         params = np.asarray(params, dtype=np.float64)
+        grad = np.asarray(grad, dtype=np.float64)
         if self.m is None:
             self.m = np.zeros_like(params)
             self.v = np.zeros_like(params)
@@ -148,8 +166,7 @@ class Adam(BaseOptimizer):
         self.v = self.beta2 * self.v + (1.0 - self.beta2) * (grad**2)
         m_hat = self.m / (1.0 - self.beta1**self.t)
         v_hat = self.v / (1.0 - self.beta2**self.t)
-        params -= self.lr * m_hat / (np.sqrt(v_hat) + self.eps)
-        return params
+        return params - self.lr * m_hat / (np.sqrt(v_hat) + self.eps)
 
 
 class AdamW(BaseOptimizer):
@@ -172,6 +189,7 @@ class AdamW(BaseOptimizer):
 
     def step(self, params, grad):
         params = np.asarray(params, dtype=np.float64)
+        grad = np.asarray(grad, dtype=np.float64)
         if self.m is None:
             self.m = np.zeros_like(params)
             self.v = np.zeros_like(params)
@@ -180,18 +198,15 @@ class AdamW(BaseOptimizer):
         self.v = self.beta2 * self.v + (1.0 - self.beta2) * (grad**2)
         m_hat = self.m / (1.0 - self.beta1**self.t)
         v_hat = self.v / (1.0 - self.beta2**self.t)
-        params -= self.lr * (m_hat / (np.sqrt(v_hat) + self.eps) + self.weight_decay * params)
-        return params
+        return params - self.lr * (m_hat / (np.sqrt(v_hat) + self.eps) + self.weight_decay * params)
 
 
 def get_optimizer(name, lr=0.01, **kwargs):
-    """
-    Factory function to get an optimizer instance by name.
-    Supported names: 'SGD', 'Momentum', 'NAG', 'AdaGrad', 'RMSProp', 'Adam', 'AdamW'.
-    """
+    """Factory function returning optimizer instances."""
     optimizers = {
         "SGD": SGD,
-        "Momentum": Momentum,
+        "SGDMomentum": SGDMomentum,
+        "Momentum": SGDMomentum,
         "NAG": NAG,
         "AdaGrad": AdaGrad,
         "RMSProp": RMSProp,
@@ -199,35 +214,5 @@ def get_optimizer(name, lr=0.01, **kwargs):
         "AdamW": AdamW,
     }
     if name not in optimizers:
-        raise ValueError(f"Unknown optimizer: {name}. Choose from {list(optimizers.keys())}")
+        raise ValueError(f"Unknown optimizer: {name}")
     return optimizers[name](lr=lr, **kwargs)
-
-
-if __name__ == "__main__":
-
-    def f(theta):
-        x, y = theta
-        return x**2 + 50.0 * y**2
-
-    def grad_f(theta):
-        x, y = theta
-        return np.array([2.0 * x, 100.0 * y], dtype=np.float64)
-
-    optimizer_names = ["SGD", "Momentum", "NAG", "AdaGrad", "RMSProp", "Adam", "AdamW"]
-
-    print("Sanity checking optimizers on toy quadratic f(x, y) = x^2 + 50*y^2 starting at (8, 8):\n")
-
-    for name in optimizer_names:
-        opt = get_optimizer(name, lr=0.1)
-        params = np.array([8.0, 8.0], dtype=np.float64)
-        print(f"--- {name} ---")
-        print(f"Initial: x={params[0]:.4f}, y={params[1]:.4f}, f(x,y)={f(params):.4f}")
-
-        for step_i in range(1, 11):
-            if name == "NAG":
-                params = opt.step(params, grad_f)
-            else:
-                grad = grad_f(params)
-                params = opt.step(params, grad)
-            print(f"Step {step_i:2d}: x={params[0]:.4f}, y={params[1]:.4f}, f(x,y)={f(params):.4f}")
-        print()
