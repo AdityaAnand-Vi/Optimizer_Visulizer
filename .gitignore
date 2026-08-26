@@ -1,19 +1,23 @@
 # Dependencies
-frontend/node_modules/
 node_modules/
+frontend/node_modules/
 
-# Build outputs
+# Build artifacts
+dist/
+build/
 frontend/dist/
 frontend/build/
 
-# Python artifacts
+# Python cache & virtual environments
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+backend/__pycache__/
 .venv/
 venv/
 env/
 
-# OS / Environment files
-.DS_Store
+# Environment files
 .env
 .env.local
+.DS_Store
