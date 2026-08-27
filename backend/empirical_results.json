@@ -1,0 +1,159 @@
+{
+  "EXP1": {
+    "0.001": {
+      "loss": 8.644129436587766,
+      "pos": [
+        2.940090038857274,
+        1.057656655584645e-22
+      ],
+      "status": "RUNNING"
+    },
+    "0.01": {
+      "loss": 1.0770991086182104e-07,
+      "pos": [
+        0.00032819188116378053,
+        0.0
+      ],
+      "status": "CONVERGED"
+    },
+    "0.1": {
+      "loss": 20995226.2144,
+      "pos": [
+        5.12,
+        648.0
+      ],
+      "status": "DIVERGED"
+    }
+  },
+  "EXP2": {
+    "SGD": {
+      "loss": 1.0770991086182104e-07,
+      "pos": [
+        0.00032819188116378053,
+        0.0
+      ],
+      "status": "CONVERGED",
+      "steps": 500
+    },
+    "Momentum": {
+      "loss": 3.167984002708721e-10,
+      "pos": [
+        1.779883142917607e-05,
+        -2.3085153234887578e-11
+      ],
+      "status": "CONVERGED",
+      "steps": 500
+    },
+    "NAG": {
+      "loss": 6369599.295647924,
+      "pos": [
+        7.8792588442880005,
+        356.9183999999997
+      ],
+      "status": "DIVERGED",
+      "steps": 4
+    },
+    "AdaGrad": {
+      "loss": 2923.596936501156,
+      "pos": [
+        7.571355897597773,
+        7.5713558975563515
+      ],
+      "status": "RUNNING",
+      "steps": 500
+    },
+    "RMSProp": {
+      "loss": 457.2566412486297,
+      "pos": [
+        2.994297333708098,
+        2.994297329010525
+      ],
+      "status": "RUNNING",
+      "steps": 500
+    },
+    "Adam": {
+      "loss": 725.902764070118,
+      "pos": [
+        3.772716203059474,
+        3.7727162006206894
+      ],
+      "status": "RUNNING",
+      "steps": 500
+    },
+    "AdamW": {
+      "loss": 717.1646493356087,
+      "pos": [
+        3.7499402616079136,
+        3.7499402591774196
+      ],
+      "status": "RUNNING",
+      "steps": 500
+    }
+  },
+  "EXP5": {
+    "SGD": {
+      "optimizer": "SGD",
+      "final_train_loss": 0.057323354886569484,
+      "final_test_loss": 0.09744845849813007,
+      "final_train_acc": 98.9010989010989,
+      "final_test_acc": 97.36842105263158,
+      "convergence_epoch": 98
+    },
+    "Momentum": {
+      "optimizer": "Momentum",
+      "final_train_loss": 0.05798715471649954,
+      "final_test_loss": 0.0975041114661207,
+      "final_train_acc": 98.9010989010989,
+      "final_test_acc": 97.36842105263158,
+      "convergence_epoch": 98
+    },
+    "NAG": {
+      "optimizer": "NAG",
+      "final_train_loss": 0.05798715471649954,
+      "final_test_loss": 0.0975041114661207,
+      "final_train_acc": 98.9010989010989,
+      "final_test_acc": 97.36842105263158,
+      "convergence_epoch": 98
+    },
+    "AdaGrad": {
+      "optimizer": "AdaGrad",
+      "final_train_loss": 0.026765848451381736,
+      "final_test_loss": 0.07428220300448553,
+      "final_train_acc": 99.34065934065934,
+      "final_test_acc": 95.6140350877193,
+      "convergence_epoch": 93
+    },
+    "RMSProp": {
+      "optimizer": "RMSProp",
+      "final_train_loss": 0.0007608811675646384,
+      "final_test_loss": 0.19766567839707766,
+      "final_train_acc": 100.0,
+      "final_test_acc": 97.36842105263158,
+      "convergence_epoch": 100
+    },
+    "Adam": {
+      "optimizer": "Adam",
+      "final_train_loss": 0.006192460590799944,
+      "final_test_loss": 0.28545138826410466,
+      "final_train_acc": 100.0,
+      "final_test_acc": 95.6140350877193,
+      "convergence_epoch": 100
+    },
+    "AdamW": {
+      "optimizer": "AdamW",
+      "final_train_loss": 0.0009932173878826854,
+      "final_test_loss": 0.21662577116944778,
+      "final_train_acc": 100.0,
+      "final_test_acc": 94.73684210526315,
+      "convergence_epoch": 100
+    }
+  },
+  "EXP6": {
+    "loss": 2310440.96,
+    "pos": [
+      6.4,
+      -152.0
+    ],
+    "status": "DIVERGED"
+  }
+}

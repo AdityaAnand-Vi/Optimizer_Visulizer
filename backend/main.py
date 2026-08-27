@@ -6,8 +6,11 @@ Exposes REST API endpoints:
 """
 
 from typing import Dict, List, Optional, Union
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+import os
 import numpy as np
 from pydantic import BaseModel, Field
 from sklearn.datasets import load_breast_cancer
@@ -352,3 +355,17 @@ def train_nn(req: TrainNNRequest):
 @app.post("/api/benchmark/train")
 def train_alias(req: TrainNNRequest):
     return train_nn(req)
+
+# Serve frontend static files
+frontend_dist = os.path.join(os.path.dirname(__file__), "dist")
+if os.path.exists(frontend_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    # For any other route, serve index.html (SPA routing fallback)
+    @app.get("/{full_path:path}")
+    async def catch_all(full_path: str, request: Request):
+        if request.url.path.startswith("/api/"):
+            return JSONResponse(status_code=404, content={"message": "Not Found"})
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
