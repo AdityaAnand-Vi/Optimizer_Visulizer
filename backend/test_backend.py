@@ -111,7 +111,7 @@ class TestAPIEndpoints(unittest.TestCase):
     def test_simulate_2d_endpoint(self):
         payload = {
             "surface_name": "L2: c = 50 (default)",
-            "optimizers": ["SGD", "SGDMomentum", "Adam"],
+            "optimizers": ["SGD", "SGDMomentum", "Adam", "AdamW"],
             "x0": 8.0,
             "y0": 8.0,
             "lr": 0.01,
@@ -122,8 +122,39 @@ class TestAPIEndpoints(unittest.TestCase):
         data = res.json()
         self.assertIn("trajectories", data)
         self.assertIn("losses", data)
+        self.assertIn("gradients", data)
+        self.assertIn("deltas", data)
+        self.assertIn("statuses", data)
+        self.assertIn("final_statuses", data)
         self.assertIn("SGD", data["trajectories"])
         self.assertEqual(len(data["trajectories"]["SGD"]), 21)
+        self.assertEqual(len(data["deltas"]["SGD"]), 21)
+
+        # Delta calculation check: dx = x1 - x0
+        t0 = data["trajectories"]["SGD"][0]
+        t1 = data["trajectories"]["SGD"][1]
+        d1 = data["deltas"]["SGD"][1]
+        self.assertAlmostEqual(d1[0], t1[0] - t0[0], places=6)
+        self.assertAlmostEqual(d1[1], t1[1] - t0[1], places=6)
+
+    def test_nag_divergence_handling(self):
+        # High LR and high c causes NAG divergence
+        payload = {
+            "surface_name": "L3: c = 100",
+            "optimizers": ["NAG"],
+            "x0": 8.0,
+            "y0": 8.0,
+            "lr": 0.05,
+            "max_steps": 100,
+        }
+        res = self.client.post("/api/simulate-2d", json=payload)
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["final_statuses"]["NAG"], "DIVERGED")
+        nag_statuses = data["statuses"]["NAG"]
+        self.assertIn("DIVERGED", nag_statuses)
+        last_pos = data["trajectories"]["NAG"][-1]
+        self.assertTrue(abs(last_pos[0]) >= 10.0 or abs(last_pos[1]) >= 10.0 or data["losses"]["NAG"][-1] >= 1e5)
 
     def test_train_nn_endpoint(self):
         payload = {
@@ -143,3 +174,4 @@ class TestAPIEndpoints(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

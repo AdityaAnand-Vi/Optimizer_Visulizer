@@ -128,6 +128,11 @@ def simulate_2d(req: Simulate2DRequest):
 
     trajectories = {}
     losses = {}
+    gradients = {}
+    deltas = {}
+    statuses = {}
+    final_statuses = {}
+    peaks = {}
 
     for opt_name in req.optimizers:
         kwargs = {"lr": req.lr}
@@ -146,33 +151,77 @@ def simulate_2d(req: Simulate2DRequest):
             raise HTTPException(status_code=400, detail=str(e))
 
         params = np.array([req.x0, req.y0], dtype=np.float64)
+        init_loss = float(func(params[0], params[1]))
+        init_grad = grad_fn(params)
+
         traj = [params.copy().tolist()]
-        loss_vals = [float(func(params[0], params[1]))]
+        loss_vals = [init_loss]
+        grad_vals = [init_grad.copy().tolist()]
+        delta_vals = [[0.0, 0.0]]
+        step_statuses = ["RUNNING"]
+        opt_status = "RUNNING"
+        peak_theta = max(abs(req.x0), abs(req.y0))
 
         for step_i in range(req.max_steps):
-            if np.isnan(params).any() or np.isinf(params).any() or abs(params[0]) > 1e8 or abs(params[1]) > 1e8:
-                traj.append(params.copy().tolist())
-                loss_vals.append(loss_vals[-1] if not np.isnan(loss_vals[-1]) else None)
-                continue
-
             try:
                 if opt_name == "NAG":
                     lookahead = opt.get_lookahead_params(params)
                     g = grad_fn(lookahead)
-                    params = opt.step(params, g)
+                    next_params = opt.step(params, g)
                 else:
                     g = grad_fn(params)
-                    params = opt.step(params, g)
+                    next_params = opt.step(params, g)
 
+                delta = next_params - params
+                params = next_params
                 l_val = float(func(params[0], params[1]))
-                traj.append(params.copy().tolist())
-                loss_vals.append(l_val)
+
+                is_div = (
+                    np.isnan(params).any() or
+                    np.isinf(params).any() or
+                    abs(params[0]) > 1e6 or
+                    abs(params[1]) > 1e6 or
+                    np.isnan(l_val) or
+                    np.isinf(l_val) or
+                    l_val > 1e6
+                )
+
+                safe_x = float(params[0]) if (np.isfinite(params[0]) and abs(params[0]) <= 1e12) else (1e12 if params[0] > 0 else -1e12)
+                safe_y = float(params[1]) if (np.isfinite(params[1]) and abs(params[1]) <= 1e12) else (1e12 if params[1] > 0 else -1e12)
+                safe_loss = l_val if (np.isfinite(l_val) and abs(l_val) <= 1e12) else 1e12
+                safe_gx = float(g[0]) if np.isfinite(g[0]) else 1e12
+                safe_gy = float(g[1]) if np.isfinite(g[1]) else 1e12
+                safe_dx = float(delta[0]) if np.isfinite(delta[0]) else 0.0
+                safe_dy = float(delta[1]) if np.isfinite(delta[1]) else 0.0
+
+                traj.append([safe_x, safe_y])
+                loss_vals.append(safe_loss)
+                grad_vals.append([safe_gx, safe_gy])
+                delta_vals.append([safe_dx, safe_dy])
+
+                if is_div:
+                    step_statuses.append("DIVERGED")
+                    opt_status = "DIVERGED"
+                    break
+                elif safe_loss < 1e-6 or (safe_gx**2 + safe_gy**2) < 1e-10:
+                    step_statuses.append("CONVERGED")
+                    opt_status = "CONVERGED"
+                else:
+                    step_statuses.append("RUNNING")
+
+                peak_theta = max(peak_theta, abs(safe_x), abs(safe_y))
             except Exception:
-                traj.append(params.copy().tolist())
-                loss_vals.append(None)
+                step_statuses.append("DIVERGED")
+                opt_status = "DIVERGED"
+                break
 
         trajectories[opt_name] = traj
         losses[opt_name] = loss_vals
+        gradients[opt_name] = grad_vals
+        deltas[opt_name] = delta_vals
+        statuses[opt_name] = step_statuses
+        final_statuses[opt_name] = opt_status
+        peaks[opt_name] = peak_theta
 
     return {
         "surface_name": req.surface_name,
@@ -184,6 +233,11 @@ def simulate_2d(req: Simulate2DRequest):
         "z_vals": Z,
         "trajectories": trajectories,
         "losses": losses,
+        "gradients": gradients,
+        "deltas": deltas,
+        "statuses": statuses,
+        "final_statuses": final_statuses,
+        "peaks": peaks,
     }
 
 

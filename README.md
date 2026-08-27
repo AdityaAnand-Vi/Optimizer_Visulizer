@@ -38,11 +38,26 @@ Optimizer Visualizer/
 
 ## 🚀 How to Run the Application
 
+You can run the suite using either the **Streamlit** dashboard or the **React + FastAPI** web app:
+
+### Option 1: Streamlit Dashboard (Standard Entry Point)
 Ensure dependencies (`streamlit`, `numpy`, `matplotlib`, `scikit-learn`) are installed in your Python environment:
 
 ```bash
 streamlit run app.py
 ```
+
+### Option 2: Full-Stack React + FastAPI Web Application
+1. **Start the FastAPI Backend**:
+   ```bash
+   cd backend
+   uvicorn main:app --reload --port 8000
+   ```
+2. **Start the React Frontend**:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
 
 ---
 
@@ -75,3 +90,4 @@ streamlit run app.py
   - **Advanced Mode**: Unlocks all hyperparameter sliders, technical explanation panels, and adaptive learning rate plots.
 - **LR Sensitivity Presets**: Instant preset buttons ($\eta = 0.001$, $0.01$, $0.1$) to quickly compare convergence vs oscillation vs divergence.
 - **Input Validation**: All user inputs (learning rate, epochs, batch size, coordinates, weight decay) strictly validate positivity and numerical sanity.
+
