@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { runBenchmarkTrain } from '../api';
 
 const OPT_COLORS = {
@@ -138,7 +138,7 @@ export default function PartBDashboard({ appMode }) {
   const [pct,       setPct]       = useState(0);
   const [results,   setResults]   = useState(null);
   const [modal,     setModal]     = useState(false);
-  const [error,     setError]     = useState(false);
+  const [error,     setError]     = useState(null);  // null | 'backend_offline' | 'unknown'
   const [hoverEpoch,setHoverEpoch]= useState(null);
   const [hoverOpt,  setHoverOpt]  = useState(null);
   
@@ -155,7 +155,7 @@ export default function PartBDashboard({ appMode }) {
 
   const handleTrain = async () => {
     if (!opts.length) return;
-    setTraining(true); setPct(0); setError(false); setIsPlaying(false);
+    setTraining(true); setPct(0); setError(null); setIsPlaying(false);
     const ticker = setInterval(() => setPct(p => Math.min(90, p + 2)), 800);
     try {
       const bs = batch === 'Full Batch' ? 455 : parseInt(batch);
@@ -165,7 +165,9 @@ export default function PartBDashboard({ appMode }) {
       setIsPlaying(true);
     } catch (err) {
       console.error(err);
-      setError(true);
+      // Detect network/backend errors vs other errors
+      const isNetErr = err instanceof TypeError && err.message.toLowerCase().includes('fetch');
+      setError(isNetErr ? 'backend_offline' : 'unknown');
     } finally {
       clearInterval(ticker);
       setPct(100);
@@ -245,7 +247,7 @@ export default function PartBDashboard({ appMode }) {
   ];
 
   let statusText = 'Configure your optimizers and run the benchmark.';
-  if (error) statusText = 'Benchmark failed.';
+  if (error) statusText = error === 'backend_offline' ? 'Backend offline — start the Python server first.' : 'Benchmark failed — check console for details.';
   else if (training) statusText = `Training ${opts.length} optimizers...`;
   else if (results) statusText = `Benchmark complete · ${results.summary_table.length} optimizers`;
 
@@ -421,6 +423,40 @@ export default function PartBDashboard({ appMode }) {
           </span>
         </div>
 
+        {/* Offline error banner */}
+        {error === 'backend_offline' && (
+          <div style={{
+            marginBottom: 12, padding: '14px 18px',
+            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.35)',
+            borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'flex-start', gap: 12,
+          }}>
+            <span style={{ fontSize: 20 }}>⚠️</span>
+            <div>
+              <div style={{ fontWeight: 700, color: '#FCA5A5', marginBottom: 4 }}>Backend server is not running</div>
+              <div style={{ fontSize: 12, color: 'var(--text-sec)', lineHeight: 1.6 }}>
+                Part B requires the Python FastAPI backend to train the neural network.
+                Part A works offline because it uses a built-in JavaScript fallback.<br />
+                <strong style={{ color: '#FCD34D' }}>To start the backend:</strong> open a terminal in the{' '}
+                <code style={{ fontFamily: 'JetBrains Mono', background: 'rgba(0,0,0,0.4)', padding: '1px 5px', borderRadius: 3 }}>backend/</code>{' '}
+                folder and run:
+                <br />
+                <code style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: '#6EE7B7', background: 'rgba(0,0,0,0.4)', padding: '4px 8px', borderRadius: 3, display: 'inline-block', marginTop: 6 }}>
+                  uvicorn main:app --reload --port 8000
+                </code>
+              </div>
+            </div>
+          </div>
+        )}
+        {error === 'unknown' && (
+          <div style={{
+            marginBottom: 12, padding: '12px 16px',
+            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
+            borderRadius: 'var(--radius-md)', fontSize: 12, color: '#FCA5A5',
+          }}>
+            ❌ Benchmark failed. Check the browser console for details.
+          </div>
+        )}
+
         {results && (
           <div className="glass-card" style={{ padding: '8px 14px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
              <button 
@@ -436,6 +472,13 @@ export default function PartBDashboard({ appMode }) {
                 disabled={isPlaying || playbackEpoch >= epochs} 
                 className="btn-secondary" style={{ padding: '4px 12px' }}>
                 → Step
+             </button>
+             {/* Skip to end — reveals the summary table immediately */}
+             <button
+                onClick={() => { setIsPlaying(false); setPlaybackEpoch(epochs); }}
+                disabled={playbackEpoch >= epochs}
+                className="btn-secondary" style={{ padding: '4px 12px' }}>
+                ⏭ Skip to End
              </button>
              
              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -476,7 +519,7 @@ export default function PartBDashboard({ appMode }) {
                 <div style={{ fontSize: 11, color: 'var(--text-sec)', minHeight: 16 }}>{desc}</div>
               </div>
               <div style={{ position: 'relative' }} onMouseMove={handleMouseMove} onMouseLeave={() => setHoverEpoch(null)}>
-                <canvas ref={ref} width={430} height={190}
+                <canvas ref={ref} width={860} height={380}
                   style={{ display: 'block', width: '100%', height: 'auto', background: 'rgba(3,5,13,0.5)', cursor: 'crosshair' }} />
                 <div style={{ position: 'absolute', bottom: 6, left: 10, display: 'flex', flexWrap: 'wrap', gap: 6, pointerEvents: 'none' }}>
                   {opts.map(name => (
