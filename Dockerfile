@@ -27,5 +27,5 @@ COPY --from=build-frontend /app/frontend/dist /app/dist
 # Expose the port that Cloud Run expects (8080 by default, though we can configure it)
 EXPOSE 8080
 
-# Start the application using Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Start the application - use $PORT env var injected by Cloud Run (defaults to 8080)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
