@@ -2,7 +2,10 @@
  * API client module for FastAPI backend interaction with offline client fallback.
  */
 
-const API_BASE_URL = 'http://localhost:8000';
+// Use relative URLs so this works in both environments:
+// - Dev: Vite proxy (vite.config.js) forwards /api/* → http://localhost:8000
+// - Production: FastAPI serves the frontend from the same origin, so /api/* hits the same server
+const API_BASE_URL = '';
 
 export async function fetchTrajectoryData(payload) {
   try {
