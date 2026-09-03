@@ -72,11 +72,11 @@ class NAG(BaseOptimizer):
         self.v = None
 
     def get_lookahead_params(self, params):
-        """Compute lookahead parameters theta_lookahead = theta - beta * v."""
+        """Compute lookahead parameters theta_lookahead = theta - lr * beta * v."""
         params = np.asarray(params, dtype=np.float64)
         if self.v is None:
             self.v = np.zeros_like(params)
-        return params - self.beta * self.v
+        return params - self.lr * self.beta * self.v
 
     def step(self, params, grad):
         """

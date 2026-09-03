@@ -299,9 +299,21 @@ def train_nn(req: TrainNNRequest):
                 X_batch, y_batch = X_train_scaled[batch_idx], y_train[batch_idx]
 
                 flat_params = mlp.get_flat_params()
-                _, cache = mlp.forward(X_batch)
-                grads = mlp.backward(X_batch, y_batch, cache)
-                flat_grads = mlp.flatten_grads(grads)
+
+                if opt_name == "NAG":
+                    # NAG requires gradient evaluated at the lookahead position:
+                    # theta_lookahead = theta - lr * beta * v
+                    lookahead_params = opt.get_lookahead_params(flat_params)
+                    mlp.set_flat_params(lookahead_params)
+                    _, cache = mlp.forward(X_batch)
+                    grads = mlp.backward(X_batch, y_batch, cache)
+                    flat_grads = mlp.flatten_grads(grads)
+                    # Restore current params before the optimizer step
+                    mlp.set_flat_params(flat_params)
+                else:
+                    _, cache = mlp.forward(X_batch)
+                    grads = mlp.backward(X_batch, y_batch, cache)
+                    flat_grads = mlp.flatten_grads(grads)
 
                 updated_params = opt.step(flat_params, flat_grads)
                 mlp.set_flat_params(updated_params)

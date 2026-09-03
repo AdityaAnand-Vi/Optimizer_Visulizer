@@ -45,13 +45,13 @@
       "steps": 500
     },
     "NAG": {
-      "loss": 6369599.295647924,
+      "loss": 7.600865404040825e-10,
       "pos": [
-        7.8792588442880005,
-        356.9183999999997
+        2.7569667034697435e-05,
+        3.105262338443869e-24
       ],
-      "status": "DIVERGED",
-      "steps": 4
+      "status": "CONVERGED",
+      "steps": 500
     },
     "AdaGrad": {
       "loss": 2923.596936501156,
@@ -109,8 +109,8 @@
     },
     "NAG": {
       "optimizer": "NAG",
-      "final_train_loss": 0.05798715471649954,
-      "final_test_loss": 0.0975041114661207,
+      "final_train_loss": 0.057915294281919945,
+      "final_test_loss": 0.09749156797837748,
       "final_train_acc": 98.9010989010989,
       "final_test_acc": 97.36842105263158,
       "convergence_epoch": 98

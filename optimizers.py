@@ -73,7 +73,7 @@ class NAG(BaseOptimizer):
         params = np.asarray(params, dtype=np.float64)
         if self.v is None:
             self.v = np.zeros_like(params)
-        lookahead = params - self.beta * self.v
+        lookahead = params - self.lr * self.beta * self.v
         grad = grad_fn(lookahead)
         self.v = self.beta * self.v + (1.0 - self.beta) * grad
         params -= self.lr * self.v

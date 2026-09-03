@@ -154,7 +154,7 @@ const EXPERIMENTS = [
     title: 'Can you make NAG diverge?',
     desc: 'High momentum peeking ahead on a steep ravine causes overshoots.',
     surface: 'L3: c = 100',
-    lr: 0.05,
+    lr: 0.1,
     opts: ['NAG', 'Momentum', 'Adam'],
   },
   {
@@ -312,7 +312,7 @@ function StepMathBlock({ name, cur, prev, safeStep, data, surface, lr, beta, wd 
         <div className="opt-info-formula" style={{ width: '100%', margin: '6px 0 0', fontSize: 10.5, whiteSpace: 'pre-wrap' }}>
           {name === 'SGD' && 'θ ← θ − η·∇L'}
           {(name === 'Momentum' || name === 'SGDMomentum') && 'v ← β·v + (1−β)·∇L\nθ ← θ − η·v'}
-          {name === 'NAG' && 'v ← β·v + (1−β)·∇L(θ − βv)\nθ ← θ − η·v'}
+          {name === 'NAG' && 'v ← β·v + (1−β)·∇L(θ − ηβv)\nθ ← θ − η·v'}
           {name === 'AdaGrad' && 'G += ∇L²\nθ ← θ − (η/√(G+ε))·∇L'}
           {name === 'RMSProp' && 'v ← β·v + (1−β)·∇L²\nθ ← θ − (η/√(v+ε))·∇L'}
           {name === 'Adam' && 'm, v EMA + bias correction\nθ ← θ − η·m̂/(√v̂+ε)'}

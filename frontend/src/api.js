@@ -84,8 +84,8 @@ function simulate2DClientFallback(payload) {
       let dx = 0, dy = 0;
 
       if (name === 'NAG') {
-        const peekX = x - beta * vx;
-        const peekY = y - beta * vy;
+        const peekX = x - lr * beta * vx;
+        const peekY = y - lr * beta * vy;
         const peekGrad = gradFn(peekX, peekY);
         gx = peekGrad[0]; gy = peekGrad[1];
         vx = beta * vx + (1 - beta) * gx;

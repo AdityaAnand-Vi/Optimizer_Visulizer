@@ -6,9 +6,9 @@ const DEEP_DIVES = [
     num: '1',
     color: '#3DD9FF',
     title: "Why NAG's Look-Ahead Gradient Reduces Overshoot vs. Plain Momentum",
-    formula: 'Plain Momentum: g = ∇L(θₜ) → vₜ = β vₜ₋₁ + (1-β) g\nNAG Look-Ahead:  g_look = ∇L(θₜ - β vₜ₋₁) → vₜ = β vₜ₋₁ + (1-β) g_look',
+    formula: 'Plain Momentum: g = ∇L(θₜ) → vₜ = β vₜ₋₁ + (1-β) g\nNAG Look-Ahead:  g_look = ∇L(θₜ - η β vₜ₋₁) → vₜ = β vₜ₋₁ + (1-β) g_look',
     mechanism: 'Plain Momentum computes the gradient at current position θₜ and adds it to past velocity, behaving like a blind heavy ball rolling full-speed into an opposing uphill slope before realizing it needs to turn back.',
-    solution: 'NAG first takes a provisional look-ahead leap along the momentum vector θₜ - β·vₜ₋₁ (where it expects to be next). If that point climbs up the opposite ravine wall, ∇L immediately senses the rising slope and applies an anticipatory brake before the step is executed, dramatically reducing oscillation and overshoot.',
+    solution: 'NAG first takes a provisional look-ahead leap along the momentum vector θₜ - η·β·vₜ₋₁ (where it expects to be next). If that point climbs up the opposite ravine wall, ∇L immediately senses the rising slope and applies an anticipatory brake before the step is executed, dramatically reducing oscillation and overshoot.',
   },
   {
     id: 'adagrad',
@@ -42,7 +42,7 @@ const DEEP_DIVES = [
 const OPT_CARDS = {
   SGD: { name: 'SGD', formula: 'θ ← θ − η·∇L', desc: 'Steps directly downhill opposite the gradient. Fast and simple, but severely zig-zags in ill-conditioned ravines.' },
   SGDMomentum: { name: 'Momentum', formula: 'v ← β·v + (1−β)·∇L,  θ ← θ − η·v', desc: 'Accumulates velocity in consistent directions, dampening oscillations and accelerating along shallow valleys.' },
-  NAG: { name: 'NAG', formula: 'v ← β·v + (1−β)·∇L(θ − βv),  θ ← θ − η·v', desc: 'Evaluates gradients at a look-ahead position, providing predictive braking before overshooting valley minima.' },
+  NAG: { name: 'NAG', formula: 'v ← β·v + (1−β)·∇L(θ − ηβv),  θ ← θ − η·v', desc: 'Evaluates gradients at a look-ahead position, providing predictive braking before overshooting valley minima.' },
   AdaGrad: { name: 'AdaGrad', formula: 'G += g²,  θ ← θ − η·g / √(G+ε)', desc: 'Adapts learning rates coordinate-wise based on historical gradient magnitudes. Great for sparse data; freezes in deep nets.' },
   RMSProp: { name: 'RMSProp', formula: 'v ← β·v + (1−β)·g²,  θ ← θ − η·g / √(v+ε)', desc: 'Fixes AdaGrad by replacing cumulative sums with exponential moving averages of squared gradients.' },
   Adam: { name: 'Adam', formula: 'm, v moving averages + bias corrections,  θ ← θ − η·m̂ / (√v̂+ε)', desc: 'Combines Momentum (1st moment) and RMSProp (2nd moment) with exact finite-sample bias correction.' },

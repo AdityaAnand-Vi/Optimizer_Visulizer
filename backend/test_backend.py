@@ -39,7 +39,7 @@ class TestOptimizers(unittest.TestCase):
         grads = np.array([0.5, 1.0])
         updated = opt.step(params, grads)
         next_lookahead = opt.get_lookahead_params(updated)
-        expected_lookahead = updated - 0.9 * opt.v
+        expected_lookahead = updated - opt.lr * opt.beta * opt.v
         np.testing.assert_allclose(next_lookahead, expected_lookahead, atol=1e-7)
 
     def test_adagrad_update(self):
