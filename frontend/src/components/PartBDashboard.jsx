@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { runBenchmarkTrain } from '../api';
+import { SlidersHorizontal, PanelLeftClose } from 'lucide-react';
 
 const OPT_COLORS = {
   SGD:         { hex: '#FF6B6B', rgb: '255,107,107' },
@@ -145,6 +146,7 @@ export default function PartBDashboard({ appMode }) {
   const [playbackEpoch, setPlaybackEpoch] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const trainLossRef = useRef(null);
   const testLossRef  = useRef(null);
@@ -252,10 +254,50 @@ export default function PartBDashboard({ appMode }) {
   else if (results) statusText = `Benchmark complete · ${results.summary_table.length} optimizers`;
 
   return (
-    <div className="playground-layout">
+    <div className={`playground-layout${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+
+      {/* ── Floating expand button (visible only when collapsed) ── */}
+      {sidebarCollapsed && (
+        <button
+          className="sidebar-expand-fab"
+          onClick={() => setSidebarCollapsed(false)}
+          title="Expand Controls Panel"
+        >
+          <SlidersHorizontal style={{ width: 16, height: 16 }} />
+          <span>Controls</span>
+        </button>
+      )}
 
       {/* ── Sidebar ─────────────────────────────────── */}
-      <aside className="playground-sidebar sidebar">
+      <aside className={`playground-sidebar sidebar${sidebarCollapsed ? ' sidebar-hidden' : ''}`}>
+
+        {/* ── Sidebar Header with collapse button ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Controls</span>
+          <button
+            onClick={() => setSidebarCollapsed(true)}
+            title="Collapse Panel"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '4px 8px',
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              fontSize: 10.5,
+              fontWeight: 500,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.color = 'var(--text-sec)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+          >
+            <PanelLeftClose style={{ width: 14, height: 14 }} />
+            Collapse
+          </button>
+        </div>
         <div>
           <div className="section-header">
             <span className="section-title">OPTIMIZERS</span>
