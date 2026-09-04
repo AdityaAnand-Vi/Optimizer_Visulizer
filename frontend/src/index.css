@@ -775,6 +775,13 @@ html, body {
   grid-template-columns: 290px minmax(0, 1fr);
   gap: 20px;
   overflow: hidden;
+  transition: grid-template-columns 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.playground-layout.sidebar-collapsed {
+  grid-template-columns: 0px minmax(0, 1fr);
+  gap: 0;
 }
 
 .playground-sidebar {
@@ -788,6 +795,49 @@ html, body {
   gap: 16px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.playground-sidebar.sidebar-hidden {
+  opacity: 0;
+  transform: translateX(-20px);
+  pointer-events: none;
+}
+
+/* ── Sidebar expand FAB (visible when sidebar is collapsed) ── */
+.sidebar-expand-fab {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: var(--surface-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-sec);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: all 0.2s var(--ease-smooth);
+  animation: fabSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-expand-fab:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: rgba(124, 108, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(124, 108, 255, 0.25);
+}
+
+@keyframes fabSlideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .playground-content {
@@ -868,6 +918,10 @@ html, body {
     gap: 16px;
   }
 
+  .playground-layout.sidebar-collapsed {
+    gap: 16px;
+  }
+
   .playground-sidebar {
     height: auto;
     overflow: visible;
@@ -886,6 +940,10 @@ html, body {
     height: auto;
     overflow: visible;
     padding-right: 0;
+  }
+
+  .sidebar-expand-fab {
+    display: none;
   }
 }
 

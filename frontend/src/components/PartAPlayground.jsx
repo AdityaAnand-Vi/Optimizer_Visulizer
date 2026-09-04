@@ -20,7 +20,10 @@ import {
   Check,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  PanelLeftClose,
+  PanelLeftOpen,
+  SlidersHorizontal
 } from 'lucide-react';
 import { fetchTrajectoryData } from '../api';
 import { fmtNumber, fmtPos, fmtLoss, fmtDelta } from '../utils/formatters';
@@ -336,7 +339,8 @@ function StepMathBlock({ name, cur, prev, safeStep, data, surface, lr, beta, wd 
 export default function PartAPlayground({ appMode }) {
   const isBeginner = appMode.includes('Beginner') || appMode.includes('Simple');
 
-  const [showCoach, setShowCoach] = useState(true);
+  const [showCoach,        setShowCoach]        = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mode,      setMode]      = useState('compare'); // 'explore' | 'compare'
   const [surface,   setSurface]   = useState('L2: c = 50 (default)');
   const [opts,      setOpts]      = useState(['SGD', 'Adam', 'AdamW']);
@@ -776,9 +780,50 @@ export default function PartAPlayground({ appMode }) {
   };
 
   return (
-    <div className="playground-layout">
+    <div className={`playground-layout${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+
+      {/* ── Floating expand button (visible only when collapsed) ── */}
+      {sidebarCollapsed && (
+        <button
+          className="sidebar-expand-fab"
+          onClick={() => setSidebarCollapsed(false)}
+          title="Expand Controls Panel"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          <span>Controls</span>
+        </button>
+      )}
+
       {/* ── LEFT PANEL: Sidebar Controls ── */}
-      <aside className="playground-sidebar hud-card mobile-order-controls">
+      <aside className={`playground-sidebar hud-card mobile-order-controls${sidebarCollapsed ? ' sidebar-hidden' : ''}`}>
+        {/* ── Sidebar Header with collapse button ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Controls</span>
+          <button
+            onClick={() => setSidebarCollapsed(true)}
+            title="Collapse Panel (hide controls)"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '4px 8px',
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              fontSize: 10.5,
+              fontWeight: 500,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.color = 'var(--text-sec)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+          >
+            <PanelLeftClose className="w-3.5 h-3.5" />
+            Collapse
+          </button>
+        </div>
+
         {/* Primary Action Button */}
         <div>
           <button
